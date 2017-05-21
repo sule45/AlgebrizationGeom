@@ -9,12 +9,11 @@ extern Formula parsed_formula;
 
 int main()
 {
-  yyparse();
-  
-  if(parsed_formula.get() != NULL)
-    cout << parsed_formula;
-  
-  cout << endl;
+    yyparse();
+    if(parsed_formula.get() != NULL)
+        cout << parsed_formula;
 
-  return 0;
+    cout << endl;
+
+    return 0;
 }

@@ -9,21 +9,29 @@
 
 true                     return TRUE;
 false                    return FALSE;
-collinear				 yylval.str_attr = new string(yytext); return COLLINEAR;
+
+collinear                yylval.str_attr = new string(yytext); return REL3;
+parallel                 yylval.str_attr = new string(yytext); return REL4;
+perpendicular            yylval.str_attr = new string(yytext); return REL4;
+lengths_eq               yylval.str_attr = new string(yytext); return REL4;
+is_midpoint              yylval.str_attr = new string(yytext); return REL3;
+is_intersection          yylval.str_attr = new string(yytext); return REL5;
+is_equal                 yylval.str_attr = new string(yytext); return REL2;
+
 [a-z][a-zA-Z_0-9]*       yylval.str_attr = new string(yytext); return SYMBOL;
 [A-Z][a-zA-Z_0-9]*       yylval.str_attr = new string(yytext); return VARIABLE;
 \(                       return *yytext;
 \)                       return *yytext;
-,			 return *yytext;
+,                        return *yytext;
 &                        return AND;
-\|			 return OR;
+\|                       return OR;
 =\>                      return IMP;
 \<=\>                    return IFF;
-~			 return NOT;
-=			 return EQ;
-~=			 return NEQ;
-!			 return FORALL;
-\?			 return EXISTS;
+~                        return NOT;
+=                        return EQ;
+~=                       return NEQ;
+!                        return FORALL;
+\?                       return EXISTS;
 \[                       return *yytext;
 \]                       return *yytext;
 :                        return *yytext;

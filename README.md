@@ -1,5 +1,5 @@
 # AlgebrizationGeom
 
-This project is product of work for Automated Reasoning project at MATF Belgrade.
+Project for Automated Reasoning course at MATF Belgrade.
 
-Authors: Milos SukovicJ(sule45), Tina Mastilovic(kibobe)
+Authors: Milos Sukovic (sule45), Tina Mastilovic (kibobe)

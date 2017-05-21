@@ -25,7 +25,10 @@ Formula parsed_formula;
 %token NEQ;
 %token FORALL;
 %token EXISTS;
-%token<str_attr> COLLINEAR;
+%token<str_attr> REL2;
+%token<str_attr> REL3;
+%token<str_attr> REL4;
+%token<str_attr> REL5;
 
 %type<formula_attr> formula
 %type<formula_attr> iff_formula
@@ -145,18 +148,16 @@ atomic_formula : atom
 	       }
 	       ;
 
-atom : SYMBOL
+
+ 	 // SYMBOL
+//      {
+//        $$ = new Atom(*$1);
+//        delete $1;
+//      }
+     // | 
+ atom : REL2 '(' term ',' term ')'
      {
-       $$ = new Atom(*$1);
-       delete $1;
-     }
-     | COLLINEAR '(' term ',' term ',' term ')'
-     {
-       $$ = new Atom(*$1, *new vector<Term>{ Term($3), Term($5), Term($7) } );
-       /*
-       delete $1;
-       delete $3;
-       */
+       $$ = new Atom(*$1, *new vector<Term>{ Term($3), Term($5) } );
      }
      /*
      | SYMBOL '(' term_seq ')'
@@ -166,6 +167,18 @@ atom : SYMBOL
        delete $3;
      }
      */
+     | REL3 '(' term ',' term ',' term ')'
+     {
+       $$ = new Atom(*$1, *new vector<Term>{ Term($3), Term($5), Term($7) } );
+     }
+     | REL4 '(' term ',' term ',' term ',' term ')'
+     {
+       $$ = new Atom(*$1, *new vector<Term>{ Term($3), Term($5), Term($7), Term($9) } );
+     }
+     | REL5 '(' term ',' term ',' term ',' term ',' term ')'
+     {
+       $$ = new Atom(*$1, *new vector<Term>{ Term($3), Term($5), Term($7), Term($9), Term($11) } );
+     }
      | term EQ term 
      {
        $$ = new Equality(Term($1), Term($3));
