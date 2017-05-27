@@ -6,8 +6,12 @@
 #include <vector>
 #include <memory>
 #include <functional>
-#include <sstream>
 #include <map>
+#include <sstream>
+#include <algorithm>
+#include <exception>
+
+#define MAX 100
 
 using namespace std;
 
@@ -15,15 +19,168 @@ typedef string FunctionSymbol;
 typedef string PredicateSymbol;
 typedef string Variable;
 
-static map<string, string> toCoordinateLanguage = {
-    {"collinear", "<<(1_x - 2_x) * (2_y - 3_y) = (1_y - 2_y) * (2_x - 3_x)>>"},
-    {"parallel", "<<(1_x - 2_x) * (3_y - 4_y) = (1_y - 2_y) * (3_x - 4_x)>>"},
-    {"perpendicular", "<<(1_x - 2_x) * (3_x - 4_x) + (1_y - 2_y) * (3_y - 4_y) = 0>>"},
-    {"lengths_eq", "<<(1_x - 2_x)^2 + (1_y - 2_y)^2 = (3_x - 4_x)^2 + (3_y - 4_y)^2>>"},
-    {"is_midpoint", "<<2 * 1_x = 2_x + 3_x & 2 * 1_y = 2_y + 3_y>>"},
-    {"is_intersection", "<<(1_x - 2_x) * (2_y - 3_y) = (1_y - 2_y) * (2_x - 3_x) & (1_x - 4_x) * (4_y - 5_y) = (1_y - 4_y) * (4_x - 5_x)>>"},
-    {"is_equal", "<<(1_x = 2_x) & (1_y = 2_y)>>"}
+enum axis{
+    X,
+    Y
 };
+
+static string apendAxis(axis a){
+    if(a == X)
+        return "_x";
+    else
+        return "_y";
+}
+
+enum optimizationLevel{
+    notOptimized = 0,
+    halfOptimized = 1,
+    optimized = 2
+};
+
+struct extendedString {
+    extendedString(){}
+
+    extendedString(string _varName, optimizationLevel l = notOptimized)
+        :varName(_varName), level(l)
+    {}
+
+    string varName;
+    optimizationLevel level;
+
+    const string str(axis a){
+        switch(level){
+        case notOptimized:
+            return varName + apendAxis(a);
+        case optimized:
+            return "0";
+        case halfOptimized:
+            if(a == X)
+                return "0";
+            else
+                return varName + apendAxis(a);
+        }
+
+        return "";
+    }
+};
+
+enum relation {
+    collinear,
+    parallel,
+    perpendicular,
+    lengths_eq,
+    is_midpoint,
+    is_intersection,
+    is_equal
+};
+
+static relation getRelation(string s) {
+    if(s == "collinear")
+        return collinear;
+    else if(s == "parallel")
+        return parallel;
+    else if(s == "perpendicular")
+        return perpendicular;
+    else if(s == "lengths_eq")
+        return lengths_eq;
+    else if(s == "is_midpoint")
+        return is_midpoint;
+    else if(s == "is_intersection")
+        return is_intersection;
+    else //if(s == "is_equal")
+        return is_equal;
+}
+
+static string openExp = "<<";
+static string closeExp = ">>";
+
+static string toCoordinateLanguage(relation rel, vector<extendedString>& points){
+
+    stringstream ss;
+    ss << openExp;
+
+    switch(rel){
+    case collinear:
+        // "<<(0_x - 1_x) * (1_y - 2_y) = (0_y - 1_y) * (1_x - 2_x)>>"
+        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
+                  << points[1].str(Y) << " - " << points[2].str(Y) << ") = ("
+                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
+                  << points[1].str(X) << " - " << points[2].str(X) << ")";
+        break;
+    case parallel:
+        // "<<(0_x - 1_x) * (2_y - 3_y) = (0_y - 1_y) * (2_x - 3_x)>>"
+        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
+                  << points[2].str(Y) << " - " << points[3].str(Y) << ") = ("
+                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
+                  << points[2].str(X) << " - " << points[3].str(X) << ")";
+        break;
+    case perpendicular:
+        // "<<(0_x - 1_x) * (2_x - 3_x) + (0_y - 1_y) * (2_y - 3_y) = 0>>"
+        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
+                  << points[2].str(X) << " - " << points[3].str(X) << ") + ("
+                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
+                  << points[2].str(Y) << " - " << points[3].str(Y) << ") = 0";
+        break;
+    case lengths_eq:
+        // "<<(0_x - 1_x)^2 + (0_y - 1_y)^2 = (2_x - 3_x)^2 + (2_y - 3_y)^2>>"
+        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ")^2 + ("
+                  << points[0].str(Y) << " - " << points[1].str(Y) << ")^2 = ("
+                  << points[2].str(X) << " - " << points[3].str(X) << ")^2 + ("
+                  << points[2].str(Y) << " - " << points[3].str(Y) << ")^2";
+        break;
+    case is_midpoint:
+        // "<<2 * 0_x = 1_x + 2_x & 2 * 0_y = 1_y + 2_y>>"
+        ss << "2 * " << points[0].str(X) << " = "
+           << points[1].str(X) << " + " << points[2].str(X) << " & "
+           << "2 * " << points[0].str(Y) << " = "
+           << points[1].str(Y) << " + " << points[2].str(Y);
+        break;
+    case is_intersection:
+        // "<<(0_x - 1_x) * (1_y - 2_y) = (0_y - 1_y) * (1_x - 2_x) & (0_x - 3_x) * (3_y - 4_y) = (0_y - 3_y) * (3_x - 4_x)>>"
+        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
+                  << points[1].str(Y) << " - " << points[2].str(Y) << ") = ("
+                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
+                  << points[1].str(X) << " - " << points[2].str(X) << ") & ("
+                  << points[0].str(X) << " - " << points[3].str(X) << ") * ("
+                  << points[3].str(Y) << " - " << points[4].str(Y) << ") = ("
+                  << points[0].str(Y) << " - " << points[3].str(Y) << ") * ("
+                  << points[3].str(X) << " - " << points[4].str(X) << ")";
+        break;
+    case is_equal:
+        // "<<(0_x = 1_x) & (0_y = 1_y)>>"
+        ss << "(" << points[0].str(X) << " = " << points[1].str(X) << ") & ("
+                  << points[0].str(Y) << " = " << points[1].str(Y) << ")";
+        break;
+    }
+
+    ss << closeExp;
+    return ss.str();
+}
+
+static extendedString extend(string varName,
+                             bool optimizationIndicator,
+                             string& optimizedVar,
+                             string& halfOptimizedVar)
+{
+    if(optimizationIndicator && optimizedVar.size() == 0){
+        optimizedVar = varName;
+    }
+
+    if(optimizationIndicator && optimizedVar.size() > 0 &&
+            varName != optimizedVar && halfOptimizedVar.size() == 0){
+        halfOptimizedVar = varName;
+    }
+
+    optimizationLevel level = notOptimized;
+    if(varName == optimizedVar){
+        level = optimized;
+    }
+    else if (varName == halfOptimizedVar){
+        level = halfOptimized;
+    }
+
+    return extendedString(varName, level);
+}
 
 class BaseTerm;
 typedef shared_ptr<BaseTerm> Term;
@@ -115,9 +272,23 @@ public:
     enum Type { T_TRUE, T_FALSE, T_ATOM, T_NOT,
                 T_AND, T_OR, T_IMP, T_IFF, T_FORALL, T_EXISTS };
 
-    virtual void printFormula(ostream & ostr) const = 0;
+    void doTheMagic(bool optInd, ostream& ostr){
+        optimizedVar = "";
+        halfOptimizedVar = "";
+
+        optimizationIndicator = optInd;
+        printConvertedFormula(ostr);
+        ostr << endl;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr) = 0;
     virtual Type getType() const = 0;
     virtual ~BaseFormula() {}
+
+    bool optimizationIndicator;
+
+    string optimizedVar;
+    string halfOptimizedVar;
 };
 
 
@@ -136,7 +307,7 @@ public:
 class True : public LogicConstant {
 
 public:
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         ostr << "true";
     }
@@ -152,7 +323,7 @@ public:
 class False : public LogicConstant {
 
 public:
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         ostr << "false";
     }
@@ -187,16 +358,17 @@ public:
         return _ops;
     }
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
-        string transformed = toCoordinateLanguage[_p];
+        vector<extendedString> extendedOps;
+        for (auto it : _ops)
+               extendedOps.push_back(extend(
+                                            ((FunctionTerm*)(it.get()))->getSymbol(),
+                                            optimizationIndicator,
+                                            optimizedVar,
+                                            halfOptimizedVar));
 
-        for (size_t i = 1; i <= _ops.size(); i++)
-        {
-            transformed = ReplaceAll(transformed, to_string(i), ((FunctionTerm*)_ops[i-1].get())->getSymbol());
-        }
-
-        ostr << transformed;
+        ostr << toCoordinateLanguage(getRelation(_p), extendedOps);
     }
 
     virtual Type getType() const
@@ -233,7 +405,7 @@ public:
         return _ops[1];
     }
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         _ops[0]->printTerm(ostr);
         ostr << " = ";
@@ -260,7 +432,7 @@ public:
         return _ops[1];
     }
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
 
         _ops[0]->printTerm(ostr);
@@ -290,7 +462,7 @@ public:
         :UnaryConjective(op)
     {}
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         ostr << "~";
         Type op_type = _op->getType();
@@ -299,7 +471,7 @@ public:
                 op_type == T_IMP || op_type == T_IFF)
             ostr << "(";
 
-        _op->printFormula(ostr);
+        _op->printConvertedFormula(ostr);
 
         if(op_type == T_AND || op_type == T_OR ||
                 op_type == T_IMP || op_type == T_IFF)
@@ -340,7 +512,7 @@ public:
         :BinaryConjective(op1, op2)
     {}
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         Type op1_type = _op1->getType();
         Type op2_type = _op2->getType();
@@ -349,7 +521,7 @@ public:
                 op1_type == T_IFF)
             ostr << "(";
 
-        _op1->printFormula(ostr);
+        _op1->printConvertedFormula(ostr);
 
         if(op1_type == T_OR || op1_type == T_IMP ||
                 op1_type == T_IFF)
@@ -361,7 +533,7 @@ public:
                 op2_type == T_IFF || op2_type == T_AND)
             ostr << "(";
 
-        _op2->printFormula(ostr);
+        _op2->printConvertedFormula(ostr);
 
         if(op2_type == T_OR || op2_type == T_IMP ||
                 op2_type == T_IFF || op2_type == T_AND)
@@ -374,15 +546,13 @@ public:
     }
 };
 
-
-
 class Or : public BinaryConjective {
 public:
     Or(const Formula & op1, const Formula & op2)
         :BinaryConjective(op1, op2)
     {}
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
 
         Type op1_type = _op1->getType();
@@ -391,7 +561,7 @@ public:
         if(op1_type == T_IMP || op1_type == T_IFF)
             ostr << "(";
 
-        _op1->printFormula(ostr);
+        _op1->printConvertedFormula(ostr);
 
         if(op1_type == T_IMP || op1_type == T_IFF)
             ostr << ")";
@@ -402,7 +572,7 @@ public:
                 op2_type == T_IFF || op2_type == T_OR)
             ostr << "(";
 
-        _op2->printFormula(ostr);
+        _op2->printConvertedFormula(ostr);
 
         if(op2_type == T_IMP ||
                 op2_type == T_IFF || op2_type == T_OR)
@@ -415,14 +585,13 @@ public:
     }
 };
 
-
 class Imp : public BinaryConjective {
 public:
     Imp(const Formula & op1, const Formula & op2)
         :BinaryConjective(op1, op2)
     {}
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
 
         Type op1_type = _op1->getType();
@@ -431,7 +600,7 @@ public:
         if(op1_type == T_IFF)
             ostr << "(";
 
-        _op1->printFormula(ostr);
+        _op1->printConvertedFormula(ostr);
 
         if(op1_type == T_IFF)
             ostr << ")";
@@ -441,7 +610,7 @@ public:
         if(op2_type == T_IMP || op2_type == T_IFF)
             ostr << "(";
 
-        _op2->printFormula(ostr);
+        _op2->printConvertedFormula(ostr);
 
         if(op2_type == T_IMP || op2_type == T_IFF)
             ostr << ")";
@@ -453,8 +622,6 @@ public:
     }
 };
 
-
-
 class Iff : public BinaryConjective {
 
 public:
@@ -462,20 +629,20 @@ public:
         :BinaryConjective(op1, op2)
     {}
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
 
         Type op1_type = _op1->getType();
         Type op2_type = _op2->getType();
 
-        _op1->printFormula(ostr);
+        _op1->printConvertedFormula(ostr);
 
         ostr << " => ";
 
         if(op1_type == T_IFF)
             ostr << "(";
 
-        _op2->printFormula(ostr);
+        _op2->printConvertedFormula(ostr);
 
         if(op2_type == T_IFF)
             ostr << ")";
@@ -487,7 +654,6 @@ public:
         return T_IFF;
     }
 };
-
 
 class Quantifier : public BaseFormula {
 protected:
@@ -521,7 +687,7 @@ public:
     {
         return T_FORALL;
     }
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         cout << "![" << _v << "] : ";
 
@@ -531,7 +697,7 @@ public:
                 op_type == T_IMP || op_type == T_IFF)
             ostr << "(";
 
-        _op->printFormula(ostr);
+        _op->printConvertedFormula(ostr);
 
         if(op_type == T_AND || op_type == T_OR ||
                 op_type == T_IMP || op_type == T_IFF)
@@ -550,7 +716,7 @@ public:
         return T_EXISTS;
     }
 
-    virtual void printFormula(ostream & ostr) const
+    virtual void printConvertedFormula(ostream & ostr)
     {
         cout  << "?[" << _v << "] : ";
 
@@ -560,7 +726,7 @@ public:
                 op_type == T_IMP || op_type == T_IFF)
             ostr << "(";
 
-        _op->printFormula(ostr);
+        _op->printConvertedFormula(ostr);
 
         if(op_type == T_AND || op_type == T_OR ||
                 op_type == T_IMP || op_type == T_IFF)
@@ -578,7 +744,7 @@ ostream & operator << (ostream & ostr, const Term & t)
 inline
 ostream & operator << (ostream & ostr, const Formula & f)
 {
-    f->printFormula(ostr);
+    f->printConvertedFormula(ostr);
     return ostr;
 }
 

@@ -10,7 +10,7 @@ int yylex();
 
 Formula parsed_formula;
 bool exitIndicator;
-
+bool printIndicator;
 %}
 
 %token<str_attr> SYMBOL;
@@ -56,6 +56,7 @@ bool exitIndicator;
 input  : formula ';'
        {
          parsed_formula = Formula($1);
+         printIndicator = true;
 	     return 0;
        }
        | EXIT ';'
