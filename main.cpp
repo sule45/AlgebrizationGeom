@@ -6,14 +6,17 @@ extern int yyparse();
 /* Ovaj pokazivac ce nakon parsiranja dobiti vrednost 
    adrese parsirane formule. */
 extern Formula parsed_formula;
+extern bool exitIndicator;
 
 int main()
 {
-    yyparse();
-    if(parsed_formula.get() != NULL)
-        cout << parsed_formula;
+    while(true){
+        yyparse();
+        if(exitIndicator)
+            break;
+        cout << parsed_formula << endl;
+    }
 
     cout << endl;
-
     return 0;
 }

@@ -9,11 +9,13 @@ int yylex();
 #include "fol.hpp"
 
 Formula parsed_formula;
+bool exitIndicator;
 
 %}
 
 %token<str_attr> SYMBOL;
 %token<str_attr> VARIABLE;
+%token EXIT;
 %token TRUE;
 %token FALSE;
 %token NOT;
@@ -54,7 +56,12 @@ Formula parsed_formula;
 input  : formula ';'
        {
          parsed_formula = Formula($1);
-	 return 0;
+	     return 0;
+       }
+       | EXIT ';'
+       {
+        exitIndicator = true;
+        return 0;
        }
        ;
 

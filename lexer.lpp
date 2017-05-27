@@ -7,6 +7,8 @@
 
 %%
 
+exit                     return EXIT;
+
 true                     return TRUE;
 false                    return FALSE;
 
