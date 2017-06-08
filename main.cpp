@@ -21,8 +21,7 @@ int main(int argc, char* argv[])
             optIndicator = true;
             
         }
-        
-        if(strcmp(argv[i], "-h") == 0){
+        else if(strcmp(argv[i], "-h") == 0){
             cout <<  "USE: \n"
                  <<  "collinear(A1, A2, A3) \n" 
                  <<  "parallel(A1, A2, A3, A4) \n"
