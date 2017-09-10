@@ -70,6 +70,7 @@ static void toCoordinateLanguage(relation rel, vector<extendedString>& points){
 
     Formula minus1, minus2, minus3, minus4, minus5, minus6, minus7, minus8;
     Formula times1, times2, times3, times4;
+    Formula pow1, pow2, pow3, pow4;
     Formula plus1, plus2;
     Formula equal, equal1, equal2;
     Formula f1;
@@ -122,15 +123,28 @@ static void toCoordinateLanguage(relation rel, vector<extendedString>& points){
         f1->printConvertedFormula(cout); 
         }   
         break;
-     /*   
+      
     case lengths_eq:
+        {
         // "<<(0_x - 1_x)^2 + (0_y - 1_y)^2 = (2_x - 3_x)^2 + (2_y - 3_y)^2>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ")^2 + ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ")^2 = ("
-                  << points[2].str(X) << " - " << points[3].str(X) << ")^2 + ("
-                  << points[2].str(Y) << " - " << points[3].str(Y) << ")^2";
+        minus1 = createMinus(points[0].str(X), points[1].str(X));
+        minus2 = createMinus(points[0].str(Y), points[1].str(Y));
+        minus3 = createMinus(points[2].str(X), points[3].str(X));
+        minus4 = createMinus(points[2].str(Y), points[3].str(Y));
+
+        pow1 = make_shared<Pow>(minus1);
+        pow2 = make_shared<Pow>(minus2);
+        pow3 = make_shared<Pow>(minus3);
+        pow4 = make_shared<Pow>(minus4);
+
+        plus1 = make_shared<Plus>(pow1, pow2);
+        plus2 = make_shared<Plus>(pow3, pow4);
+
+        equal = make_shared<Equal>(plus1, plus2);
+        f1 = ((Equal *)equal.get())->simple();
+        f1->printConvertedFormula(cout); 
+        }
         break;    
-    */
     case is_midpoint:
         {
         // "<<2 * 0_x = 1_x + 2_x & 2 * 0_y = 1_y + 2_y>>"

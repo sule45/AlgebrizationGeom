@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
             cout <<  "USE: \n"
                  <<  "collinear(A1, A2, A3) \n" 
                  <<  "parallel(A1, A2, A3, A4) \n"
+                 <<  "lengths_eq(A1, A2, A3, A4) \n"
                  <<  "perpendicular(A1, A2, A3, A4)  \n"
                  <<  "is_midpoint(A1, A2, A3)  \n"
                  <<  "is_intersection(A1, A2, A3, A4, A5)  \n"

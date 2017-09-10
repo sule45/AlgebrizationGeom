@@ -180,7 +180,7 @@ class BaseFormula : public enable_shared_from_this<BaseFormula> {
 public:
 
     enum Type { T_TRUE, T_FALSE, T_ATOM, T_NOT,
-                T_AND, T_OR, T_IMP, T_IFF, T_FORALL, T_EXISTS, T_PLUS, T_MINUS, T_EQ, T_TIMES, T_LIT };
+                T_AND, T_OR, T_IMP, T_IFF, T_FORALL, T_EXISTS, T_PLUS, T_MINUS, T_EQ, T_TIMES, T_POW, T_LIT };
 
     void doTheMagic(bool optInd, ostream& ostr);
 
@@ -715,7 +715,7 @@ public:
 
         _op1->printConvertedFormula(ostr);
 
-        ostr << " - ";
+        ostr << " + ";
 
         _op2->printConvertedFormula(ostr);
 
@@ -725,30 +725,29 @@ public:
     virtual Formula simple() {
         const Formula simp_op1 = _op1->simple();
         const Formula simp_op2 = _op2->simple();
+        
         if (simp_op1->getType() == T_LIT) // onda je i simp_op2 isto T_LIT
         {
             if(((Lit *)simp_op1.get())->getSymbol() == "0"){
-
-                PredicateSymbol minusSymbol;
-            
-                if(((Lit *)_op2.get())->getSymbol() == "0") {
-                    minusSymbol = "0"; // (0 + 0) = 0
+                if(simp_op2->getType() == T_LIT && ((Lit *)simp_op2.get())->getSymbol() == "0")
+                {
+                    // (0 + 0) = 0
+                    Formula f1 = make_shared<Lit>("0");
+                    return f1;    
                 }
-                else {
-                    minusSymbol = ((Lit *)_op2.get())->getSymbol(); // (0 + x) = x
+                else
+                {
+                    // (0 + x) = x;
+                    Formula f1 = simp_op2;
+                    return f1;    
                 }
-            
-                Formula f1 = make_shared<Lit>(minusSymbol);
-                return f1;    
             }
         }
-        else if (_op2->getType() == T_LIT)
-        {
-            if(((Lit *)_op2.get())->getSymbol() == "0"){
+        
+        if (simp_op2->getType() == T_LIT && ((Lit *)simp_op2.get())->getSymbol() == "0"){
             
-                Formula f2 = make_shared<Lit>(((Lit *)_op1.get())->getSymbol()); //(x + 0) = x
+                Formula f2 = simp_op1; //(x + 0) = x
                 return f2;    
-            }
         }
 
         return make_shared<Plus>(simp_op1, simp_op2);
@@ -864,6 +863,47 @@ public:
 
 };
 
+class Pow : public UnaryConjective {
+public:
+    Pow(const Formula & op1)
+        :UnaryConjective(op1)
+    {}
+        
+
+    virtual Type getType() const
+    {
+        return T_POW;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr)  {
+        
+        if(_op->getType() == T_LIT){
+            ostr << "("; 
+            _op->printConvertedFormula(ostr);
+            ostr << ")";
+        }
+        else {
+            _op->printConvertedFormula(ostr);
+        }
+        ostr << "^2";
+    }
+
+    virtual Formula simple() {
+        
+        const Formula simp_op1 = _op->simple();
+        
+        if (simp_op1->getType() == T_LIT)
+        {
+            if(((Lit *)simp_op1.get())->getSymbol() == "0"){
+                Formula f1 = make_shared<Lit>("0");
+                return f1;    
+            }
+        }
+        return make_shared<Pow>(simp_op1);
+    }
+
+};
+
 class Equal : public BinaryConjective {
 public:
     Equal(const Formula & op1, const Formula & op2)
@@ -890,7 +930,7 @@ public:
     virtual Formula simple() {
         const Formula simp_op1 = _op1->simple();
         const Formula simp_op2 = _op2->simple();
-        
+
         if (simp_op1->getType() == T_LIT && simp_op2->getType() == T_LIT) {
             if(((Lit *)simp_op1.get())->getSymbol() == "0" && ((Lit *)simp_op2.get())->getSymbol() == "0"){
                 Formula f1 = make_shared<True>();
