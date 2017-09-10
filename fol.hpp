@@ -24,6 +24,7 @@ enum axis{
     Y
 };
 
+
 static string apendAxis(axis a){
     if(a == X)
         return "_x";
@@ -37,7 +38,8 @@ enum optimizationLevel{
     optimized = 2
 };
 
-struct extendedString {
+class extendedString {
+public:    
     extendedString(){}
 
     extendedString(string _varName, optimizationLevel l = notOptimized)
@@ -47,21 +49,7 @@ struct extendedString {
     string varName;
     optimizationLevel level;
 
-    const string str(axis a){
-        switch(level){
-        case notOptimized:
-            return varName + apendAxis(a);
-        case optimized:
-            return "0";
-        case halfOptimized:
-            if(a == X)
-                return "0";
-            else
-                return varName + apendAxis(a);
-        }
-
-        return "";
-    }
+    const string str(axis a);
 };
 
 enum relation {
@@ -75,112 +63,34 @@ enum relation {
 };
 
 static relation getRelation(string s) {
-    if(s == "collinear")
+    relation par = parallel;
+    if(s == "collinear") {
         return collinear;
-    else if(s == "parallel")
-        return parallel;
-    else if(s == "perpendicular")
+    }
+    else if(s == "parallel") {
+        return par;
+    }
+    else if(s == "perpendicular") {
         return perpendicular;
-    else if(s == "lengths_eq")
+    }
+    else if(s == "lengths_eq") {
         return lengths_eq;
-    else if(s == "is_midpoint")
+    }
+    else if(s == "is_midpoint") {
         return is_midpoint;
-    else if(s == "is_intersection")
+    }
+    else if(s == "is_intersection") {
         return is_intersection;
-    else //if(s == "is_equal")
+    }
+    else {//if(s == "is_equal") 
         return is_equal;
+    }
 }
 
 static string openExp = "<<";
 static string closeExp = ">>";
 
-static string toCoordinateLanguage(relation rel, vector<extendedString>& points){
-
-    stringstream ss;
-    ss << openExp;
-
-    switch(rel){
-    case collinear:
-        // "<<(0_x - 1_x) * (1_y - 2_y) = (0_y - 1_y) * (1_x - 2_x)>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
-                  << points[1].str(Y) << " - " << points[2].str(Y) << ") = ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
-                  << points[1].str(X) << " - " << points[2].str(X) << ")";
-        break;
-    case parallel:
-        // "<<(0_x - 1_x) * (2_y - 3_y) = (0_y - 1_y) * (2_x - 3_x)>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
-                  << points[2].str(Y) << " - " << points[3].str(Y) << ") = ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
-                  << points[2].str(X) << " - " << points[3].str(X) << ")";
-        break;
-    case perpendicular:
-        // "<<(0_x - 1_x) * (2_x - 3_x) + (0_y - 1_y) * (2_y - 3_y) = 0>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
-                  << points[2].str(X) << " - " << points[3].str(X) << ") + ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
-                  << points[2].str(Y) << " - " << points[3].str(Y) << ") = 0";
-        break;
-    case lengths_eq:
-        // "<<(0_x - 1_x)^2 + (0_y - 1_y)^2 = (2_x - 3_x)^2 + (2_y - 3_y)^2>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ")^2 + ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ")^2 = ("
-                  << points[2].str(X) << " - " << points[3].str(X) << ")^2 + ("
-                  << points[2].str(Y) << " - " << points[3].str(Y) << ")^2";
-        break;
-    case is_midpoint:
-        // "<<2 * 0_x = 1_x + 2_x & 2 * 0_y = 1_y + 2_y>>"
-        ss << "2 * " << points[0].str(X) << " = "
-           << points[1].str(X) << " + " << points[2].str(X) << " & "
-           << "2 * " << points[0].str(Y) << " = "
-           << points[1].str(Y) << " + " << points[2].str(Y);
-        break;
-    case is_intersection:
-        // "<<(0_x - 1_x) * (1_y - 2_y) = (0_y - 1_y) * (1_x - 2_x) & (0_x - 3_x) * (3_y - 4_y) = (0_y - 3_y) * (3_x - 4_x)>>"
-        ss << "(" << points[0].str(X) << " - " << points[1].str(X) << ") * ("
-                  << points[1].str(Y) << " - " << points[2].str(Y) << ") = ("
-                  << points[0].str(Y) << " - " << points[1].str(Y) << ") * ("
-                  << points[1].str(X) << " - " << points[2].str(X) << ") & ("
-                  << points[0].str(X) << " - " << points[3].str(X) << ") * ("
-                  << points[3].str(Y) << " - " << points[4].str(Y) << ") = ("
-                  << points[0].str(Y) << " - " << points[3].str(Y) << ") * ("
-                  << points[3].str(X) << " - " << points[4].str(X) << ")";
-        break;
-    case is_equal:
-        // "<<(0_x = 1_x) & (0_y = 1_y)>>"
-        ss << "(" << points[0].str(X) << " = " << points[1].str(X) << ") & ("
-                  << points[0].str(Y) << " = " << points[1].str(Y) << ")";
-        break;
-    }
-
-    ss << closeExp;
-    return ss.str();
-}
-
-static extendedString extend(string varName,
-                             bool optimizationIndicator,
-                             string& optimizedVar,
-                             string& halfOptimizedVar)
-{
-    if(optimizationIndicator && optimizedVar.size() == 0){
-        optimizedVar = varName;
-    }
-
-    if(optimizationIndicator && optimizedVar.size() > 0 &&
-            varName != optimizedVar && halfOptimizedVar.size() == 0){
-        halfOptimizedVar = varName;
-    }
-
-    optimizationLevel level = notOptimized;
-    if(varName == optimizedVar){
-        level = optimized;
-    }
-    else if (varName == halfOptimizedVar){
-        level = halfOptimized;
-    }
-
-    return extendedString(varName, level);
-}
+static void toCoordinateLanguage(relation rel, vector<extendedString>& points);
 
 class BaseTerm;
 typedef shared_ptr<BaseTerm> Term;
@@ -270,27 +180,15 @@ class BaseFormula : public enable_shared_from_this<BaseFormula> {
 public:
 
     enum Type { T_TRUE, T_FALSE, T_ATOM, T_NOT,
-                T_AND, T_OR, T_IMP, T_IFF, T_FORALL, T_EXISTS };
+                T_AND, T_OR, T_IMP, T_IFF, T_FORALL, T_EXISTS, T_PLUS, T_MINUS, T_EQ, T_TIMES, T_LIT };
 
-    void doTheMagic(bool optInd, ostream& ostr){
-        optimizedVar = "";
-        halfOptimizedVar = "";
-
-        optimizationIndicator = optInd;
-        printConvertedFormula(ostr);
-        ostr << endl;
-    }
+    void doTheMagic(bool optInd, ostream& ostr);
 
     virtual void printConvertedFormula(ostream & ostr) = 0;
     virtual Type getType() const = 0;
-    virtual ~BaseFormula() {}
-
-    bool optimizationIndicator;
-
-    string optimizedVar;
-    string halfOptimizedVar;
+    //virtual ~BaseFormula() {}
+    virtual Formula simple() = 0;
 };
-
 
 
 class AtomicFormula : public BaseFormula {
@@ -317,6 +215,9 @@ public:
         return T_TRUE;
     }
 
+    virtual Formula simple(){
+        return shared_from_this();
+    }
 };
 
 
@@ -332,8 +233,40 @@ public:
     {
         return T_FALSE;
     }
+
+    Formula simple(){
+        return shared_from_this();
+    }
 };
 
+class Lit : public BaseFormula {
+protected:
+    PredicateSymbol _p;
+
+public:
+    Lit(const PredicateSymbol & p)
+        :_p(p)
+    {}
+
+    const PredicateSymbol & getSymbol() const
+    {
+        return _p;
+    }
+
+    void printConvertedFormula(ostream & ostr)
+    {
+        ostr << _p;
+    }
+
+    Type getType() const
+    {
+        return T_LIT;
+    }
+
+    virtual Formula simple(){
+        return shared_from_this();
+    }
+};
 
 
 class Atom : public AtomicFormula {
@@ -358,23 +291,17 @@ public:
         return _ops;
     }
 
-    virtual void printConvertedFormula(ostream & ostr)
-    {
-        vector<extendedString> extendedOps;
-        for (auto it : _ops)
-               extendedOps.push_back(extend(
-                                            ((FunctionTerm*)(it.get()))->getSymbol(),
-                                            optimizationIndicator,
-                                            optimizedVar,
-                                            halfOptimizedVar));
-
-        ostr << toCoordinateLanguage(getRelation(_p), extendedOps);
-    }
+    virtual void printConvertedFormula(ostream & ostr);
 
     virtual Type getType() const
     {
         return T_ATOM;
     }
+
+    virtual Formula simple(){
+        return shared_from_this();
+    }
+
 private :
     static std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
         size_t start_pos = 0;
@@ -384,6 +311,8 @@ private :
         }
         return str;
     }
+
+    extendedString extend(string varName);
 };
 
 class Equality : public Atom {
@@ -411,6 +340,8 @@ public:
         ostr << " = ";
         _ops[1]->printTerm(ostr);
     }
+
+
 };
 
 class Disequality : public Atom {
@@ -482,6 +413,11 @@ public:
     {
         return T_NOT;
     }
+
+    virtual Formula simple(){
+        const Formula simp_op1 = _op->simple();
+        return make_shared<Not>(simp_op1);
+    }
 };
 
 
@@ -544,6 +480,12 @@ public:
     {
         return T_AND;
     }
+
+    virtual Formula simple(){
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        return make_shared<And>(simp_op1, simp_op2);
+    }
 };
 
 class Or : public BinaryConjective {
@@ -583,6 +525,12 @@ public:
     {
         return T_OR;
     }
+
+    virtual Formula simple(){
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        return make_shared<Or>(simp_op1, simp_op2);
+    }
 };
 
 class Imp : public BinaryConjective {
@@ -620,6 +568,12 @@ public:
     {
         return T_IMP;
     }
+
+    virtual Formula simple(){
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        return make_shared<Imp>(simp_op1, simp_op2);
+    }
 };
 
 class Iff : public BinaryConjective {
@@ -653,7 +607,14 @@ public:
     {
         return T_IFF;
     }
+
+    virtual Formula simple(){
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        return make_shared<Iff>(simp_op1, simp_op2);
+    }
 };
+
 
 class Quantifier : public BaseFormula {
 protected:
@@ -673,6 +634,10 @@ public:
     const Formula & getOperand() const
     {
         return _op;
+    }
+
+    virtual Formula simple(){
+        return shared_from_this();
     }
 
 };
@@ -733,6 +698,211 @@ public:
             ostr << ")";
     }
 };
+
+class Plus : public BinaryConjective {
+public:
+    Plus(const Formula & op1, const Formula & op2)
+        :BinaryConjective(op1, op2)
+    {}
+
+    virtual Type getType() const
+    {
+        return T_PLUS;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr) {
+        ostr << "(";
+
+        _op1->printConvertedFormula(ostr);
+
+        ostr << " - ";
+
+        _op2->printConvertedFormula(ostr);
+
+        ostr << ")";
+    }
+
+    virtual Formula simple() {
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        if (simp_op1->getType() == T_LIT) // onda je i simp_op2 isto T_LIT
+        {
+            if(((Lit *)simp_op1.get())->getSymbol() == "0"){
+
+                PredicateSymbol minusSymbol;
+            
+                if(((Lit *)_op2.get())->getSymbol() == "0") {
+                    minusSymbol = "0"; // (0 + 0) = 0
+                }
+                else {
+                    minusSymbol = ((Lit *)_op2.get())->getSymbol(); // (0 + x) = x
+                }
+            
+                Formula f1 = make_shared<Lit>(minusSymbol);
+                return f1;    
+            }
+        }
+        else if (_op2->getType() == T_LIT)
+        {
+            if(((Lit *)_op2.get())->getSymbol() == "0"){
+            
+                Formula f2 = make_shared<Lit>(((Lit *)_op1.get())->getSymbol()); //(x + 0) = x
+                return f2;    
+            }
+        }
+
+        return make_shared<Plus>(simp_op1, simp_op2);
+    }
+};
+
+class Minus : public BinaryConjective {
+public:
+    Minus(const Formula & op1, const Formula & op2)
+        :BinaryConjective(op1, op2)
+    {}
+
+    virtual Type getType() const
+    {
+        return T_MINUS;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr) {
+        ostr << "(";
+
+        _op1->printConvertedFormula(ostr);
+
+        ostr << " - ";
+
+        _op2->printConvertedFormula(ostr);
+
+        ostr << ")";
+    }
+
+    virtual Formula simple() {
+        
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        if (simp_op1->getType() == T_LIT) // onda je i simp_op2 isto T_LIT
+        {
+            if(((Lit *)simp_op1.get())->getSymbol() == "0"){
+
+                PredicateSymbol minusSymbol;
+            
+                if(((Lit *)_op2.get())->getSymbol() == "0") {
+                    minusSymbol = "0"; // (0 - 0) = 0
+                }
+                else {
+                    minusSymbol = "-" + ((Lit *)_op2.get())->getSymbol(); // (0 - x) = x
+                }
+            
+                Formula f1 = make_shared<Lit>(minusSymbol);
+                return f1;    
+            }
+        }
+        
+        if (_op2->getType() == T_LIT)
+        {
+            if(((Lit *)_op2.get())->getSymbol() == "0"){
+            
+                Formula f2 = make_shared<Lit>(((Lit *)_op1.get())->getSymbol()); //(x - 0) = x
+                return f2;    
+            }
+        }
+
+        return make_shared<Minus>(simp_op1, simp_op2);
+    }
+};
+
+class Times : public BinaryConjective {
+public:
+    Times(const Formula & op1, const Formula & op2)
+        :BinaryConjective(op1, op2)
+    {}
+
+    virtual Type getType() const
+    {
+        return T_TIMES;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr)  {
+        ostr << "(";
+
+        _op1->printConvertedFormula(ostr);
+
+        ostr << " * ";
+
+        _op2->printConvertedFormula(ostr);
+
+        ostr << ")";
+    }
+
+    virtual Formula simple() {
+        
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        
+        if (simp_op1->getType() == T_LIT)
+        {
+
+            if(((Lit *)simp_op1.get())->getSymbol() == "0"){
+                
+                Formula f1 = make_shared<Lit>("0");
+                return f1;    
+            }
+        }
+        if (simp_op1->getType() == T_LIT)
+        {
+            if(((Lit *)_op2.get())->getSymbol() == "0"){
+                
+                Formula f2 = make_shared<Lit>("0");
+                return f2;    
+            }
+        }
+
+        return make_shared<Times>(simp_op1, simp_op2);
+    }
+
+};
+
+class Equal : public BinaryConjective {
+public:
+    Equal(const Formula & op1, const Formula & op2)
+        :BinaryConjective(op1, op2)
+    {}
+
+    virtual Type getType() const
+    {
+        return T_EQ;
+    }
+
+    virtual void printConvertedFormula(ostream & ostr) {
+        ostr << "(";
+
+        _op1->printConvertedFormula(ostr);
+
+        ostr << " = ";
+
+        _op2->printConvertedFormula(ostr);
+
+        ostr << ")";
+    }
+
+    virtual Formula simple() {
+        const Formula simp_op1 = _op1->simple();
+        const Formula simp_op2 = _op2->simple();
+        
+        if (simp_op1->getType() == T_LIT && simp_op2->getType() == T_LIT) {
+            if(((Lit *)simp_op1.get())->getSymbol() == "0" && ((Lit *)simp_op2.get())->getSymbol() == "0"){
+                Formula f1 = make_shared<True>();
+                return f1;    
+            }
+        }
+
+        return make_shared<Equal>(simp_op1, simp_op2);
+    }
+};
+
+Formula createMinus(const string str1, const string str2);
 
 inline
 ostream & operator << (ostream & ostr, const Term & t)
