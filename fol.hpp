@@ -414,9 +414,20 @@ public:
         return T_NOT;
     }
 
-    virtual Formula simple(){
-        const Formula simp_op1 = _op->simple();
-        return make_shared<Not>(simp_op1);
+    virtual Formula simple()
+    {
+    /* Negacija se uproscava prema pravilima: ~True === False,
+                                              ~False === True.
+        Kod svih formula, simplifikacija se prvo primeni
+        rekurzivno na podformule, pa se zatim primenjuju pravila. */
+        Formula simp_op = _op->simple();
+  
+        if(simp_op->getType() == T_TRUE)
+            return make_shared<False>();
+        else if(simp_op->getType() == T_FALSE)
+            return make_shared<True>();
+        else
+            return make_shared<Not>(simp_op);
     }
 };
 
@@ -482,8 +493,20 @@ public:
     }
 
     virtual Formula simple(){
+        /* Simplifikacija konjukcije po pravilima A /\ True === A, 
+                                                  A /\ False === False i sl. */
+        
         const Formula simp_op1 = _op1->simple();
         const Formula simp_op2 = _op2->simple();
+  
+        if(simp_op1->getType() == T_TRUE)
+            return simp_op2;
+        else if(simp_op2->getType() == T_TRUE)
+            return simp_op1;
+        else if(simp_op1->getType() == T_FALSE ||
+                simp_op2->getType() == T_FALSE)
+            return make_shared<False>();
+        else
         return make_shared<And>(simp_op1, simp_op2);
     }
 };
@@ -527,8 +550,20 @@ public:
     }
 
     virtual Formula simple(){
+        
+          /* Simplifikacija disjunkcije po pravilima: A \/ True === True,
+                                                      A \/ False === A, i sl. */
         const Formula simp_op1 = _op1->simple();
         const Formula simp_op2 = _op2->simple();
+
+        if(simp_op1->getType() == T_FALSE) 
+            return simp_op2;
+        else if(simp_op2->getType() == T_FALSE)
+            return simp_op1;
+        else if(simp_op1->getType() == T_TRUE ||
+                simp_op2->getType() == T_TRUE)
+        return make_shared<True>();
+        else
         return make_shared<Or>(simp_op1, simp_op2);
     }
 };
@@ -570,9 +605,23 @@ public:
     }
 
     virtual Formula simple(){
-        const Formula simp_op1 = _op1->simple();
-        const Formula simp_op2 = _op2->simple();
-        return make_shared<Imp>(simp_op1, simp_op2);
+        /* Simplifikacija implikacije po pravilima: A ==> True === True,
+                                                    A ==> False === ~A,
+                                                    True ==> A === A,
+                                                    False ==> A === True */
+        Formula simp_op1 = _op1->simple();
+        Formula simp_op2 = _op2->simple();
+          
+        if(simp_op1->getType() == T_TRUE)
+            return simp_op2;
+        else if(simp_op2->getType() == T_TRUE)
+            return make_shared<True>();
+        else if(simp_op1->getType() == T_FALSE) 
+            return make_shared<True>();
+        else if(simp_op2->getType() == T_FALSE)
+            return make_shared<Not>(simp_op1);
+        else
+            return make_shared<Imp>(simp_op1, simp_op2);
     }
 };
 
@@ -609,9 +658,26 @@ public:
     }
 
     virtual Formula simple(){
-        const Formula simp_op1 = _op1->simple();
-        const Formula simp_op2 = _op2->simple();
-        return make_shared<Iff>(simp_op1, simp_op2);
+        
+        /* Ekvivalencija se simplifikuje pomocu pravila: True <=> A === A,
+                                                         False <=> A === ~A i sl. */
+  
+        Formula simp_op1 = _op1->simple();
+        Formula simp_op2 = _op2->simple();
+      
+        if( simp_op1->getType() == T_FALSE && 
+            simp_op2->getType() == T_FALSE)
+            return make_shared<True>();
+        else if(simp_op1->getType() == T_TRUE)
+            return simp_op2;
+        else if(simp_op2->getType() == T_TRUE)
+            return simp_op1;
+        else if(simp_op1->getType() == T_FALSE) 
+            return make_shared<Not>(simp_op2);
+        else if(simp_op2->getType() == T_FALSE)
+            return make_shared<Not>(simp_op1);
+        else
+            return make_shared<Iff>(simp_op1, simp_op2);
     }
 };
 
