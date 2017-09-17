@@ -915,9 +915,9 @@ public:
                 return f1;    
             }
         }
-        if (simp_op1->getType() == T_LIT)
+        if (simp_op2->getType() == T_LIT)
         {
-            if(((Lit *)_op2.get())->getSymbol() == "0"){
+            if(((Lit *)simp_op2.get())->getSymbol() == "0"){
                 
                 Formula f2 = make_shared<Lit>("0");
                 return f2;    
